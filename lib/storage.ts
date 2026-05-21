@@ -18,9 +18,19 @@ export function emptyPoem(): Poem {
   };
 }
 
-// Deterministic-ish placement on the celestial canvas. We generate (x,y) once
-// at publish time and freeze it on the poem, so the sky doesn't reshuffle.
-export function placeStar(seed: string): { x: number; y: number; depth: number } {
+// World box: roughly fits a default-zoom viewport so several clusters are
+// visible without panning. Smaller = stars feel closer together.
+const WORLD_HALF_W = 900;
+const WORLD_HALF_H = 540;
+
+// Each ISO week becomes a small cluster. Same-week poems land near each other
+// (within ±CLUSTER_RADIUS world units of the week's center). Different weeks
+// land in different parts of the sky.
+const CLUSTER_RADIUS = 140;
+
+// Stable 0..1 pseudo-random from a string. Uses two independent hashes so we
+// can derive x, y, and depth without correlation.
+function hash01(seed: string): { a: number; b: number; c: number } {
   let h1 = 2166136261;
   let h2 = 52711;
   for (let i = 0; i < seed.length; i++) {
@@ -28,13 +38,36 @@ export function placeStar(seed: string): { x: number; y: number; depth: number }
     h1 = Math.imul(h1, 16777619);
     h2 = Math.imul(h2 + seed.charCodeAt(i), 2246822519);
   }
-  const r1 = ((h1 >>> 0) % 10000) / 10000;
-  const r2 = ((h2 >>> 0) % 10000) / 10000;
-  const r3 = (((h1 ^ h2) >>> 0) % 10000) / 10000;
+  return {
+    a: ((h1 >>> 0) % 10000) / 10000,
+    b: ((h2 >>> 0) % 10000) / 10000,
+    c: (((h1 ^ h2) >>> 0) % 10000) / 10000,
+  };
+}
 
-  const x = (r1 * 2 - 1) * 1500;
-  const y = (r2 * 2 - 1) * 900;
-  const depth = 0.3 + r3 * 0.7;
+// Deterministic placement: cluster anchor from the week of publish, small
+// offset from the poem id. Re-running with the same inputs returns the same
+// coords, so the sky never reshuffles.
+export function placeStar(
+  id: string,
+  publishedAt: number,
+): { x: number; y: number; depth: number } {
+  // 1. Anchor each ISO week somewhere in the world.
+  const week = weekKey(publishedAt);
+  const wk = hash01(week);
+  const anchorX = (wk.a * 2 - 1) * (WORLD_HALF_W - CLUSTER_RADIUS);
+  const anchorY = (wk.b * 2 - 1) * (WORLD_HALF_H - CLUSTER_RADIUS);
+
+  // 2. Scatter the poem around the anchor (uniform disk via polar coords).
+  const off = hash01(id);
+  const r = Math.sqrt(off.a) * CLUSTER_RADIUS; // sqrt for uniform area
+  const theta = off.b * Math.PI * 2;
+  const x = anchorX + r * Math.cos(theta);
+  const y = anchorY + r * Math.sin(theta);
+
+  // 3. Depth still per-poem for parallax variety.
+  const depth = 0.3 + off.c * 0.7;
+
   return { x, y, depth };
 }
 

@@ -18,8 +18,11 @@ interface View {
   scale: number;
 }
 
-const MIN_SCALE = 0.4;
+const MIN_SCALE = 0.5;
 const MAX_SCALE = 4.5;
+// Default scale on small viewports — gives a wider initial overview so multiple
+// week-clusters are visible without panning. Overridden by auto-fit when there
+// are poems to frame.
 const TONIGHT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export default function Starmap({
@@ -44,6 +47,39 @@ export default function Starmap({
   useEffect(() => {
     viewRef.current = view;
   }, [view]);
+
+  // --- Auto-fit on first render: frame all published poems with margin ---
+  const didAutoFit = useRef(false);
+  useEffect(() => {
+    if (didAutoFit.current) return;
+    if (size.w === 0 || size.h === 0) return;
+    const placed = poems.filter(
+      (p) => p.publishedAt !== null && p.x != null && p.y != null,
+    );
+    if (placed.length === 0) return;
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const p of placed) {
+      if (p.x! < minX) minX = p.x!;
+      if (p.x! > maxX) maxX = p.x!;
+      if (p.y! < minY) minY = p.y!;
+      if (p.y! > maxY) maxY = p.y!;
+    }
+    const margin = 200; // world units around the bounding box
+    const spanX = Math.max(maxX - minX + margin * 2, 600);
+    const spanY = Math.max(maxY - minY + margin * 2, 400);
+    const scale = clamp(
+      Math.min(size.w / spanX, size.h / spanY),
+      MIN_SCALE,
+      MAX_SCALE,
+    );
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    const next = { x: -cx, y: -cy, scale };
+    setView(next);
+    viewRef.current = next;
+    didAutoFit.current = true;
+  }, [size.w, size.h, poems]);
 
   // --- Resize observer ---
   useEffect(() => {
@@ -199,9 +235,11 @@ export default function Starmap({
   const cy = size.h / 2;
   const transform = `translate(${cx + view.x * view.scale} ${cy + view.y * view.scale}) scale(${view.scale})`;
 
-  // Viewport cull box (in world coords, +300 padding so edges aren't visible).
-  const halfW = size.w > 0 ? size.w / 2 / view.scale + 300 : 9999;
-  const halfH = size.h > 0 ? size.h / 2 / view.scale + 300 : 9999;
+  // Viewport cull box (in world coords). 150-unit padding fits the new
+  // smaller world; stars within one cluster-radius outside the viewport
+  // still get drawn so they don't pop in/out during a pan.
+  const halfW = size.w > 0 ? size.w / 2 / view.scale + 150 : 9999;
+  const halfH = size.h > 0 ? size.h / 2 / view.scale + 150 : 9999;
   const minX = -view.x - halfW;
   const maxX = -view.x + halfW;
   const minY = -view.y - halfH;

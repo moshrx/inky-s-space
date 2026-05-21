@@ -102,9 +102,12 @@ export function usePoems() {
       setPoems((prev) => {
         const next = prev.map((p) => {
           if (p.id !== id) return p;
-          const pos =
-            p.x !== undefined ? { x: p.x, y: p.y, depth: p.depth } : placeStar(p.id);
-          return { ...p, publishedAt: Date.now(), ...pos };
+          const now = Date.now();
+          // Always reseat the star into its week-cluster so a poem published
+          // long after it was drafted lands with its week-mates, not in
+          // whatever empty corner an old computation chose.
+          const pos = placeStar(p.id, now);
+          return { ...p, publishedAt: now, ...pos };
         });
         const updated = next.find((p) => p.id === id);
         if (updated) {
