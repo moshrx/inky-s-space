@@ -1,0 +1,238 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fonts are loaded by next/font in app/layout.tsx — no @import here.
+   The --font-sans and --font-serif CSS variables come from there. */
+
+:root {
+  color-scheme: dark;
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --safe-left: env(safe-area-inset-left);
+  --safe-right: env(safe-area-inset-right);
+}
+
+html,
+body {
+  background: #03050d;
+  color: #e8edf7;
+  min-height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: var(--font-sans, "Inter"), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(244, 213, 141, 0.25);
+  color: #fff;
+}
+
+/* dvh fallback for older browsers */
+@supports not (height: 100dvh) {
+  .min-h-svh { min-height: 100vh; }
+  .min-h-dvh { min-height: 100vh; }
+  .h-svh { height: 100vh; }
+}
+
+/* Safe-area helpers */
+.safe-top { padding-top: max(env(safe-area-inset-top), 0px); }
+.safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 0px); }
+.safe-px {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.vignette::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 40%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  z-index: 1;
+}
+
+/* Aurora — desktop only. Mobile gets a static, no-blur gradient.
+   Blur on a fullscreen element is one of the most expensive composited
+   filters; skipping it on phones saves ~15-25% main-thread time. */
+.aurora {
+  position: fixed;
+  inset: -20%;
+  pointer-events: none;
+  background:
+    radial-gradient(40% 30% at 20% 20%, rgba(125, 211, 252, 0.08), transparent 60%),
+    radial-gradient(35% 25% at 80% 30%, rgba(192, 132, 252, 0.07), transparent 60%),
+    radial-gradient(45% 35% at 60% 80%, rgba(251, 146, 60, 0.05), transparent 60%);
+  z-index: 0;
+}
+
+@media (min-width: 768px) {
+  .aurora {
+    filter: blur(28px);
+    animation: aurora-shift 24s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+}
+
+@keyframes aurora-shift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(-3%, 2%, 0) scale(1.06); }
+}
+
+.thin-scroll::-webkit-scrollbar { width: 6px; }
+.thin-scroll::-webkit-scrollbar-track { background: transparent; }
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(232, 237, 247, 0.08);
+  border-radius: 3px;
+}
+.thin-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(232, 237, 247, 0.18);
+}
+
+.star-glow {
+  filter: drop-shadow(0 0 6px var(--glow, rgba(255, 255, 255, 0.7)));
+}
+
+textarea, input { caret-color: #f4d58d; }
+
+.poem-body {
+  font-family: var(--font-serif, "Cormorant Garamond"), Georgia, serif;
+  font-weight: 400;
+  font-size: 1.2rem;
+  line-height: 1.7;
+  letter-spacing: 0.005em;
+  white-space: pre-wrap;
+}
+@media (min-width: 640px) {
+  .poem-body { font-size: 1.35rem; }
+}
+
+/* ── Lightweight CSS animations (replace Framer on /, /inky) ───────────────── */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fade-in 2s ease forwards;
+}
+.fade-in-up {
+  animation: fade-in-up 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+.editor-enter { animation: fade-in-up 0.6s ease forwards; }
+.draft-enter { animation: fade-in-up 0.4s ease forwards; }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.shake { animation: shake 0.5s ease; }
+
+/* Four float rhythms so draft-stars don't move in lock-step */
+@keyframes float-a {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(2px, -3px, 0); }
+}
+@keyframes float-b {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-1px, 3px, 0); }
+}
+@keyframes float-c {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(3px, 1px, 0); }
+}
+@keyframes float-d {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-2px, -2px, 0); }
+}
+.float-a { animation: float-a 5.5s ease-in-out infinite; }
+.float-b { animation: float-b 7s ease-in-out infinite; }
+.float-c { animation: float-c 6.2s ease-in-out infinite; }
+.float-d { animation: float-d 8s ease-in-out infinite; }
+
+/* Twinkle for Starmap stars — driven entirely by CSS so React stops ticking */
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+.star-twinkle {
+  animation: star-twinkle var(--twinkle-dur, 4s) ease-in-out infinite;
+  animation-delay: var(--twinkle-delay, 0s);
+}
+
+@keyframes tonight-pulse {
+  0%, 100% { opacity: 0.18; }
+  50% { opacity: 0.36; }
+}
+.tonight-pulse {
+  animation: tonight-pulse 3.5s ease-in-out infinite;
+}
+/* Starmap echo orbit (SVG) */
+@keyframes echo-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.echo-orbit {
+  animation: echo-orbit var(--orbit-dur, 50s) linear infinite;
+  transform-box: fill-box;
+}
+
+/* Modal echo orbit (HTML) — three nested transforms keep the chip upright
+   while the arm rotates around the modal center */
+@keyframes orbit-rotate {
+  from { transform: rotate(var(--start, 0deg)); }
+  to { transform: rotate(calc(var(--start, 0deg) + 360deg)); }
+}
+@keyframes orbit-counter {
+  from { transform: rotate(calc(0deg - var(--start, 0deg))); }
+  to { transform: rotate(calc(-360deg - var(--start, 0deg))); }
+}
+.echo-orbit-wrap {
+  animation: orbit-rotate var(--orbit-dur, 60s) linear infinite;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.echo-orbit-arm {
+  transform: translateX(var(--radius, 260px));
+}
+.echo-orbit-counter {
+  animation: orbit-counter var(--orbit-dur, 60s) linear infinite;
+}
+
+@keyframes tonight-dot {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.4); opacity: 1; }
+}
+.tonight-dot {
+  animation: tonight-dot 2.5s ease-in-out infinite;
+}
+
+/* ── Reduced motion ────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .aurora { animation: none; }
+}
