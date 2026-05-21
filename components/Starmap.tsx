@@ -1,13 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { STAR_COLOR, type Echo, type Emotion, type Poem } from "@/types/poem";
+import { STAR_COLOR, type Echo, type Poem } from "@/types/poem";
 import { weekKey } from "@/lib/storage";
 
 interface Props {
   poems: Poem[];
   echoes: Echo[];
-  filter: Emotion | "all";
   onOpen: (poem: Poem) => void;
   flyToId: string | null;
   onFlyComplete: () => void;
@@ -26,7 +25,6 @@ const TONIGHT_WINDOW_MS = 24 * 60 * 60 * 1000;
 export default function Starmap({
   poems,
   echoes,
-  filter,
   onOpen,
   flyToId,
   onFlyComplete,
@@ -210,7 +208,6 @@ export default function Starmap({
   const maxY = -view.y + halfH;
   const inViewport = (px: number, py: number) =>
     px >= minX && px <= maxX && py >= minY && py <= maxY;
-  const visible = (poem: Poem) => filter === "all" || poem.emotion === filter;
 
   return (
     <div
@@ -237,15 +234,12 @@ export default function Starmap({
           </defs>
 
           <g transform={transform}>
-            <g opacity={filter === "all" ? 0.35 : 0.18}>
+            <g opacity={0.35}>
               {constellations.map((line, i) => {
                 const a = line.from;
                 const b = line.to;
                 if (a.x == null || b.x == null) return null;
                 if (!inViewport(a.x, a.y!) && !inViewport(b.x, b.y!)) return null;
-                const showA = visible(a);
-                const showB = visible(b);
-                if (!showA && !showB) return null;
                 return (
                   <line
                     key={i}
@@ -256,7 +250,6 @@ export default function Starmap({
                     stroke="rgba(232, 237, 247, 0.5)"
                     strokeWidth={0.5 / view.scale}
                     strokeDasharray={`${2 / view.scale} ${3 / view.scale}`}
-                    opacity={showA && showB ? 1 : 0.35}
                   />
                 );
               })}
@@ -265,7 +258,6 @@ export default function Starmap({
             {poems.map((p) => {
               if (p.publishedAt === null || p.x == null || p.y == null) return null;
               if (!inViewport(p.x, p.y)) return null;
-              const isVisible = visible(p);
               const isHover = hoverId === p.id;
               const isTonight = isTonightActive && p.id === newestId;
               const baseR = 3 + (p.depth || 0.6) * 2.2;
@@ -281,14 +273,12 @@ export default function Starmap({
               return (
                 <g
                   key={p.id}
-                  opacity={isVisible ? 1 : 0.14}
-                  style={{ cursor: isVisible ? "pointer" : "default" }}
-                  onPointerEnter={() => isVisible && setHoverId(p.id)}
+                  style={{ cursor: "pointer" }}
+                  onPointerEnter={() => setHoverId(p.id)}
                   onPointerLeave={() => setHoverId(null)}
                   onClick={(e) => {
                     e.stopPropagation();
                     if (dragMoved.current) return;
-                    if (!isVisible) return;
                     onOpen(p);
                   }}
                 >
@@ -364,7 +354,7 @@ export default function Starmap({
                   />
                   <circle cx={p.x} cy={p.y} r={r * 0.45} fill="white" opacity={0.85} />
 
-                  {isHover && isVisible && (
+                  {isHover && (
                     <g pointerEvents="none">
                       <text
                         x={p.x + r * 2}

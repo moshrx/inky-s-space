@@ -21,6 +21,21 @@ const cormorant = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: "Inky's Space",
   description: "A small space for poems. Quiet, private, alive.",
+  manifest: "/site.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Inky's Space",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "32x32" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {

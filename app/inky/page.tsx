@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Starfield from "@/components/Starfield";
-import EmotionPicker from "@/components/EmotionPicker";
 import DraftStar from "@/components/DraftStar";
 import InkyLock from "@/components/InkyLock";
 import { usePoems } from "@/lib/usePoems";
-import { EMOTION_META, type Emotion, type Poem } from "@/types/poem";
+import { STAR_COLOR, STAR_GLOW, type Poem } from "@/types/poem";
 
 type SaveState = "idle" | "saving" | "saved";
 
@@ -67,7 +66,7 @@ function InkyRoom() {
     if (drafts.length > 0) {
       setActiveId(drafts[0].id);
     } else if (published.length === 0) {
-      const d = createDraft("quiet");
+      const d = createDraft();
       setActiveId(d.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

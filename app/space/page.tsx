@@ -79,7 +79,6 @@ export default function SpacePage() {
           <Starmap
             poems={published}
             echoes={echoes}
-            filter="all"
             onOpen={(p) => setOpenPoem(p)}
             flyToId={flyTo}
             onFlyComplete={() => setFlyTo(null)}

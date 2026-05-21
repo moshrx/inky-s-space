@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Poem, Echo, Emotion } from "@/types/poem";
+import type { Poem, Echo } from "@/types/poem";
 import { uid, emptyPoem, placeStar, dbToPoem, poemToDb, dbToEcho, echoToDb } from "./storage";
 import { createClient, type AnyClient } from "./supabase/client";
 
@@ -55,7 +55,7 @@ export function usePoems() {
     };
   }, []);
 
-  const createDraft = useCallback((emotion: Emotion = "quiet") => {
+  const createDraft = useCallback((emotion?: Parameters<typeof emptyPoem>[0]) => {
     const draft = emptyPoem(emotion);
     setPoems((prev) => [draft, ...prev]);
     fire(

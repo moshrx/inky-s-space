@@ -1,4 +1,4 @@
-import type { Poem, Echo, Emotion } from "@/types/poem";
+import type { Poem, Echo } from "@/types/poem";
 
 export function uid(): string {
   return (
@@ -6,7 +6,7 @@ export function uid(): string {
   ).toUpperCase();
 }
 
-export function emptyPoem(emotion: Emotion = "quiet"): Poem {
+export function emptyPoem(emotion: Poem["emotion"] = "quiet"): Poem {
   const now = Date.now();
   return {
     id: uid(),
@@ -62,7 +62,7 @@ export function dbToPoem(row: Record<string, unknown>): Poem {
     id: row.id as string,
     title: (row.title as string) ?? "",
     body: (row.body as string) ?? "",
-    emotion: (row.emotion as Emotion) ?? "quiet",
+    emotion: (row.emotion as Poem["emotion"]) ?? "quiet",
     createdAt: row.created_at as number,
     updatedAt: row.updated_at as number,
     publishedAt: row.published_at as number | null,
