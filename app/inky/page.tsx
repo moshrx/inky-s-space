@@ -84,7 +84,7 @@ function InkyRoom() {
   }
 
   function handleNewDraft() {
-    const d = createDraft(active?.emotion ?? "quiet");
+    const d = createDraft();
     setActiveId(d.id);
     setShowSidebar(false);
   }
@@ -97,7 +97,9 @@ function InkyRoom() {
     setShowSidebar(true);
   }
 
-  const meta = active ? EMOTION_META[active.emotion] : EMOTION_META.quiet;
+  // Single gold accent for every poem now.
+  const accent = STAR_COLOR;
+  const glow = STAR_GLOW;
 
   return (
     <main className="vignette safe-px relative min-h-svh overflow-hidden">
@@ -158,8 +160,8 @@ function InkyRoom() {
               onChange={(patch) => schedulePatch(active.id, patch)}
               onPlace={handlePlaceStar}
               onUnpublish={() => unpublish(active.id)}
-              glowColor={meta.glow}
-              accent={meta.color}
+              glowColor={glow}
+              accent={accent}
             />
           ) : (
             <div className="flex h-[55svh] flex-col items-center justify-center text-center">
@@ -255,29 +257,26 @@ function InkyRoom() {
               <div className="min-h-0 space-y-2 overflow-y-auto" style={{ maxHeight: "24svh" }}>
                 {published.length === 0 ? (
                   <p className="font-serif text-sm italic text-ink-faded">nothing placed yet.</p>
-                ) : published.map((p) => {
-                  const m = EMOTION_META[p.emotion];
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => {
-                        setActiveId(p.id);
-                        setShowSidebar(false);
-                      }}
-                      className={`flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-1.5 text-left transition-colors hover:border-white/10 hover:bg-white/[0.02] ${
-                        p.id === activeId ? "border-white/15 bg-white/[0.03]" : ""
-                      }`}
-                    >
-                      <span
-                        className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
-                        style={{ background: m.color, boxShadow: `0 0 6px ${m.glow}` }}
-                      />
-                      <span className="truncate font-serif text-sm italic text-ink-silver">
-                        {p.title.trim() || p.body.split("\n")[0]?.slice(0, 30) || "untitled"}
-                      </span>
-                    </button>
-                  );
-                })}
+                ) : published.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      setActiveId(p.id);
+                      setShowSidebar(false);
+                    }}
+                    className={`flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-1.5 text-left transition-colors hover:border-white/10 hover:bg-white/[0.02] ${
+                      p.id === activeId ? "border-white/15 bg-white/[0.03]" : ""
+                    }`}
+                  >
+                    <span
+                      className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
+                      style={{ background: STAR_COLOR, boxShadow: `0 0 6px ${STAR_GLOW}` }}
+                    />
+                    <span className="truncate font-serif text-sm italic text-ink-silver">
+                      {p.title.trim() || p.body.split("\n")[0]?.slice(0, 30) || "untitled"}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -306,12 +305,10 @@ function Editor({
 }) {
   const [title, setTitle] = useState(poem.title);
   const [body, setBody] = useState(poem.body);
-  const [emotion, setEmotion] = useState<Emotion>(poem.emotion);
 
   useEffect(() => {
     setTitle(poem.title);
     setBody(poem.body);
-    setEmotion(poem.emotion);
   }, [poem.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isPublished = poem.publishedAt !== null;
@@ -319,20 +316,13 @@ function Editor({
 
   return (
     <div className="editor-enter" style={{ ["--glow" as string]: glowColor }}>
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <EmotionPicker
-          value={emotion}
-          onChange={(e) => {
-            setEmotion(e);
-            onChange({ emotion: e });
-          }}
-        />
-        <div className="flex items-center gap-3 text-[10px] uppercase tracking-[0.3em] text-ink-faded">
-          <SaveIndicator state={saveState} />
-          {isPublished && (
-            <span className="rounded-full border border-white/10 px-2 py-1 text-ink-gold">in the space</span>
-          )}
-        </div>
+      <div className="mb-5 flex items-center justify-end gap-3 text-[10px] uppercase tracking-[0.3em] text-ink-faded">
+        <SaveIndicator state={saveState} />
+        {isPublished && (
+          <span className="rounded-full border border-white/10 px-2 py-1 text-ink-gold">
+            in the space
+          </span>
+        )}
       </div>
 
       <input

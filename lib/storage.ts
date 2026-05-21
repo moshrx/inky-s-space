@@ -6,13 +6,12 @@ export function uid(): string {
   ).toUpperCase();
 }
 
-export function emptyPoem(emotion: Poem["emotion"] = "quiet"): Poem {
+export function emptyPoem(): Poem {
   const now = Date.now();
   return {
     id: uid(),
     title: "",
     body: "",
-    emotion,
     createdAt: now,
     updatedAt: now,
     publishedAt: null,
@@ -62,7 +61,6 @@ export function dbToPoem(row: Record<string, unknown>): Poem {
     id: row.id as string,
     title: (row.title as string) ?? "",
     body: (row.body as string) ?? "",
-    emotion: (row.emotion as Poem["emotion"]) ?? "quiet",
     createdAt: row.created_at as number,
     updatedAt: row.updated_at as number,
     publishedAt: row.published_at as number | null,
@@ -77,7 +75,6 @@ export function poemToDb(poem: Poem): Record<string, unknown> {
     id: poem.id,
     title: poem.title,
     body: poem.body,
-    emotion: poem.emotion,
     created_at: poem.createdAt,
     updated_at: poem.updatedAt,
     published_at: poem.publishedAt,

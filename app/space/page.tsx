@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import Starfield from "@/components/Starfield";
 import { usePoems } from "@/lib/usePoems";
-import { EMOTION_META, type Poem } from "@/types/poem";
+import { STAR_COLOR, STAR_GLOW, type Poem } from "@/types/poem";
 
 // Lazy: Framer-free SVG starmap + modal load only after the page mounts.
 const Starmap = dynamic(() => import("@/components/Starmap"), {
@@ -118,14 +118,14 @@ export default function SpacePage() {
           type="button"
           onClick={flyToTonight}
           className="fade-in-up safe-px absolute left-1/2 top-[68px] z-30 max-w-[calc(100vw-24px)] -translate-x-1/2 rounded-full border border-white/15 bg-night-900/70 px-3 py-1.5 opacity-0 backdrop-blur-md transition-all [animation-delay:300ms] hover:border-ink-gold/50 active:scale-95 sm:top-20 sm:px-4 sm:py-2 md:top-24"
-          style={{ boxShadow: `0 0 28px -12px ${EMOTION_META[tonight.emotion].glow}` }}
+          style={{ boxShadow: `0 0 28px -12px ${STAR_GLOW}` }}
         >
           <div className="flex items-center gap-2 sm:gap-2.5">
             <span
               className="tonight-dot h-1.5 w-1.5 flex-shrink-0 rounded-full"
               style={{
-                background: EMOTION_META[tonight.emotion].color,
-                boxShadow: `0 0 10px ${EMOTION_META[tonight.emotion].glow}`,
+                background: STAR_COLOR,
+                boxShadow: `0 0 10px ${STAR_GLOW}`,
               }}
             />
             <span className="text-[9px] uppercase tracking-[0.28em] text-ink-silver sm:text-[10px] sm:tracking-[0.35em]">

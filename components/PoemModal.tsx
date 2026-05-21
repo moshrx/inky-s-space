@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EMOTION_META, type Echo, type Poem } from "@/types/poem";
+import { STAR_COLOR, STAR_GLOW, type Echo, type Poem } from "@/types/poem";
 
 interface Props {
   poem: Poem | null;
@@ -39,7 +39,6 @@ export default function PoemModal({ poem, echoes, onClose, onAddEcho }: Props) {
   }, [onClose]);
 
   if (!mounted || !poem) return null;
-  const meta = EMOTION_META[poem.emotion];
   const poemEchoes = echoes.filter((e) => e.poemId === poem.id);
 
   return (
@@ -65,7 +64,6 @@ export default function PoemModal({ poem, echoes, onClose, onAddEcho }: Props) {
               echo={e}
               index={i}
               total={poemEchoes.length}
-              color={meta.color}
               show={visible}
             />
           ))}
@@ -78,7 +76,7 @@ export default function PoemModal({ poem, echoes, onClose, onAddEcho }: Props) {
           visible ? "translate-y-0 scale-100" : "translate-y-3 scale-[0.94]"
         }`}
         style={{
-          boxShadow: `0 0 80px -20px ${meta.glow}, 0 0 0 1px rgba(255,255,255,0.04)`,
+          boxShadow: `0 0 80px -20px ${STAR_GLOW}, 0 0 0 1px rgba(255,255,255,0.04)`,
         }}
       >
         <button
@@ -91,23 +89,13 @@ export default function PoemModal({ poem, echoes, onClose, onAddEcho }: Props) {
           </svg>
         </button>
 
-        <div className="mb-3 flex items-center gap-2.5 pr-8 sm:mb-4 sm:gap-3">
-          <span
-            className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
-            style={{ background: meta.color, boxShadow: `0 0 12px ${meta.glow}` }}
-          />
-          <span className="text-[8px] uppercase tracking-[0.22em] text-ink-mist sm:text-[10px] sm:tracking-[0.35em]">
-            {meta.label} — {meta.whisper}
-          </span>
-        </div>
-
         {poem.title.trim() && (
           <h2 className="font-serif text-xl font-light italic leading-tight text-ink-silver sm:text-3xl md:text-4xl">
             {poem.title}
           </h2>
         )}
 
-        <div className="mb-3 mt-2 h-px w-14 rounded-full sm:mb-5 sm:mt-3 sm:w-16" style={{ background: meta.color, opacity: 0.5 }} />
+        <div className="mb-3 mt-2 h-px w-14 rounded-full sm:mb-5 sm:mt-3 sm:w-16" style={{ background: STAR_COLOR, opacity: 0.5 }} />
 
         <p className="poem-body poem-body-mobile max-w-full break-words text-ink-silver">{poem.body}</p>
 
@@ -133,7 +121,7 @@ export default function PoemModal({ poem, echoes, onClose, onAddEcho }: Props) {
                 setText("");
               }}
               className="self-end rounded-full border border-white/15 px-3.5 py-2 text-[10px] uppercase tracking-[0.22em] text-ink-silver transition-all hover:border-white/35 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 sm:self-auto sm:px-4 sm:py-2.5 sm:text-xs sm:tracking-[0.25em]"
-              style={{ boxShadow: text.trim() ? `0 0 24px -10px ${meta.glow}` : undefined }}
+              style={{ boxShadow: text.trim() ? `0 0 24px -10px ${STAR_GLOW}` : undefined }}
             >
               send
             </button>
@@ -148,7 +136,7 @@ export default function PoemModal({ poem, echoes, onClose, onAddEcho }: Props) {
                   <div key={e.id} className="flex gap-3">
                     <span
                       className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full"
-                      style={{ background: meta.color, boxShadow: `0 0 6px ${meta.glow}` }}
+                      style={{ background: STAR_COLOR, boxShadow: `0 0 6px ${STAR_GLOW}` }}
                     />
                     <p className="font-serif text-sm italic text-ink-mist">{e.text}</p>
                   </div>
@@ -165,13 +153,11 @@ function EchoOrbit({
   echo,
   index,
   total,
-  color,
   show,
 }: {
   echo: Echo;
   index: number;
   total: number;
-  color: string;
   show: boolean;
 }) {
   const baseAngle = (index / Math.max(total, 1)) * 360;
@@ -200,7 +186,7 @@ function EchoOrbit({
           <div className="flex max-w-[180px] -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full border border-white/10 bg-night-900/70 px-3 py-1.5 backdrop-blur-sm">
             <span
               className="h-1 w-1 flex-shrink-0 rounded-full"
-              style={{ background: color, boxShadow: `0 0 6px ${color}` }}
+              style={{ background: STAR_COLOR, boxShadow: `0 0 6px ${STAR_COLOR}` }}
             />
             <span className="line-clamp-1 font-serif text-[11px] italic text-ink-mist">{echo.text}</span>
           </div>

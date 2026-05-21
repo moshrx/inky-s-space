@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Starfield from "@/components/Starfield";
 
 // Change this in one place to rotate the password.
-const INKY_PASSWORD = "canteloupe";
+const INKY_PASSWORD = "cantaloupe";
 const STORAGE_KEY = "inky:unlocked";
 
 interface Props {

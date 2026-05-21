@@ -55,8 +55,8 @@ export function usePoems() {
     };
   }, []);
 
-  const createDraft = useCallback((emotion?: Parameters<typeof emptyPoem>[0]) => {
-    const draft = emptyPoem(emotion);
+  const createDraft = useCallback(() => {
+    const draft = emptyPoem();
     setPoems((prev) => [draft, ...prev]);
     fire(
       getClient().from("poems").insert(poemToDb(draft)),
