@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Poem, Echo, Emotion } from "@/types/poem";
 import { uid, emptyPoem, placeStar, dbToPoem, poemToDb, dbToEcho, echoToDb } from "./storage";
+import { createClient, type AnyClient } from "./supabase/client";
 
-let clientPromise: Promise<import("./supabase/client").AnyClient> | null = null;
+let client: AnyClient | null = null;
 
-function getClient() {
-  clientPromise ??= import("./supabase/client").then((mod) => mod.createClient());
-  return clientPromise;
+function getClient(): AnyClient {
+  client ??= createClient();
+  return client;
 }
 
 function fire(promise: PromiseLike<unknown>, label: string) {
@@ -27,20 +28,25 @@ export function usePoems() {
     let cancelled = false;
 
     async function load() {
-      const supabase = await getClient();
-      const [{ data: poemsData, error: pErr }, { data: echoesData, error: eErr }] =
-        await Promise.all([
-          supabase.from("poems").select("*").order("created_at", { ascending: false }),
-          supabase.from("echoes").select("*").order("created_at", { ascending: false }),
-        ]);
+      try {
+        const supabase = getClient();
+        const [{ data: poemsData, error: pErr }, { data: echoesData, error: eErr }] =
+          await Promise.all([
+            supabase.from("poems").select("*").order("created_at", { ascending: false }),
+            supabase.from("echoes").select("*").order("created_at", { ascending: false }),
+          ]);
 
-      if (cancelled) return;
-      if (pErr) console.error("load poems error:", pErr);
-      if (eErr) console.error("load echoes error:", eErr);
+        if (cancelled) return;
+        if (pErr) console.error("load poems error:", pErr);
+        if (eErr) console.error("load echoes error:", eErr);
 
-      setPoems((poemsData ?? []).map((row) => dbToPoem(row as Record<string, unknown>)));
-      setEchoes((echoesData ?? []).map((row) => dbToEcho(row as Record<string, unknown>)));
-      setReady(true);
+        setPoems((poemsData ?? []).map((row) => dbToPoem(row as Record<string, unknown>)));
+        setEchoes((echoesData ?? []).map((row) => dbToEcho(row as Record<string, unknown>)));
+      } catch (err) {
+        if (!cancelled) console.error("load poems failed:", err);
+      } finally {
+        if (!cancelled) setReady(true);
+      }
     }
 
     load();
@@ -53,7 +59,7 @@ export function usePoems() {
     const draft = emptyPoem(emotion);
     setPoems((prev) => [draft, ...prev]);
     fire(
-      getClient().then((supabase) => supabase.from("poems").insert(poemToDb(draft))),
+      getClient().from("poems").insert(poemToDb(draft)),
       "createDraft error:",
     );
     return draft;
@@ -68,9 +74,7 @@ export function usePoems() {
         const updated = next.find((p) => p.id === id);
         if (updated) {
           fire(
-            getClient().then((supabase) =>
-              supabase.from("poems").update(poemToDb(updated)).eq("id", id),
-            ),
+            getClient().from("poems").update(poemToDb(updated)).eq("id", id),
             "updatePoem error:",
           );
         }
@@ -86,7 +90,7 @@ export function usePoems() {
       setEchoes((prev) => prev.filter((e) => e.poemId !== id));
       // echoes cascade via FK, but we also remove client-side
       fire(
-        getClient().then((supabase) => supabase.from("poems").delete().eq("id", id)),
+        getClient().from("poems").delete().eq("id", id),
         "deletePoem error:",
       );
     },
@@ -105,9 +109,7 @@ export function usePoems() {
         const updated = next.find((p) => p.id === id);
         if (updated) {
           fire(
-            getClient().then((supabase) =>
-              supabase.from("poems").update(poemToDb(updated)).eq("id", id),
-            ),
+            getClient().from("poems").update(poemToDb(updated)).eq("id", id),
             "publish error:",
           );
         }
@@ -126,9 +128,7 @@ export function usePoems() {
         const updated = next.find((p) => p.id === id);
         if (updated) {
           fire(
-            getClient().then((supabase) =>
-              supabase.from("poems").update(poemToDb(updated)).eq("id", id),
-            ),
+            getClient().from("poems").update(poemToDb(updated)).eq("id", id),
             "unpublish error:",
           );
         }
@@ -150,7 +150,7 @@ export function usePoems() {
       };
       setEchoes((prev) => [...prev, echo]);
       fire(
-        getClient().then((supabase) => supabase.from("echoes").insert(echoToDb(echo))),
+        getClient().from("echoes").insert(echoToDb(echo)),
         "addEcho error:",
       );
     },

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Cormorant_Garamond } from "next/font/google";
+import ChunkErrorRecovery from "@/components/ChunkErrorRecovery";
 import "./globals.css";
 
 const inter = Inter({
@@ -37,6 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${cormorant.variable}`}>
       <body className="bg-night-950 text-ink-silver antialiased">
+        <ChunkErrorRecovery />
         <div className="aurora" aria-hidden />
         <div className="relative z-10 min-h-svh">{children}</div>
       </body>

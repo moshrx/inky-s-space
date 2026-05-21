@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import Starfield from "@/components/Starfield";
 import { usePoems } from "@/lib/usePoems";
-import { EMOTIONS, EMOTION_META, type Emotion, type Poem } from "@/types/poem";
+import { EMOTION_META, type Poem } from "@/types/poem";
 
 // Lazy: Framer-free SVG starmap + modal load only after the page mounts.
 const Starmap = dynamic(() => import("@/components/Starmap"), {
@@ -22,7 +22,6 @@ const TONIGHT_WINDOW_MS = 24 * 60 * 60 * 1000;
 export default function SpacePage() {
   const { ready, published, echoes, addEcho } = usePoems();
   const [openPoem, setOpenPoem] = useState<Poem | null>(null);
-  const [filter, setFilter] = useState<Emotion | "all">("all");
   const [flyTo, setFlyTo] = useState<string | null>(null);
   const [showLegend, setShowLegend] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -57,15 +56,9 @@ export default function SpacePage() {
     return null;
   }, [published]);
 
-  const filtered = useMemo(
-    () => (filter === "all" ? published : published.filter((p) => p.emotion === filter)),
-    [published, filter],
-  );
-
   function randomStar() {
-    const pool = filtered.length > 0 ? filtered : published;
-    if (pool.length === 0) return;
-    const choice = pool[Math.floor(Math.random() * pool.length)];
+    if (published.length === 0) return;
+    const choice = published[Math.floor(Math.random() * published.length)];
     setFlyTo(choice.id);
     setTimeout(() => setOpenPoem(choice), 1100);
   }
@@ -86,7 +79,7 @@ export default function SpacePage() {
           <Starmap
             poems={published}
             echoes={echoes}
-            filter={filter}
+            filter="all"
             onOpen={(p) => setOpenPoem(p)}
             flyToId={flyTo}
             onFlyComplete={() => setFlyTo(null)}
@@ -147,31 +140,13 @@ export default function SpacePage() {
         </button>
       )}
 
-      {/* Filter bar — horizontal scroll, hugs safe-area */}
+      {/* Bottom action */}
       <div className="safe-bottom pointer-events-none absolute bottom-2 left-0 right-0 z-30 flex justify-center px-2 sm:bottom-5 sm:px-4">
-        <div className="pointer-events-auto thin-scroll flex max-w-full items-center gap-1 overflow-x-auto rounded-full border border-white/10 bg-night-900/70 px-2 py-1.5 backdrop-blur-md sm:gap-2 sm:px-3 sm:py-2">
-          <FilterChip
-            active={filter === "all"}
-            onClick={() => setFilter("all")}
-            label="all"
-            color="#e8edf7"
-          />
-          {EMOTIONS.map((e) => {
-            const m = EMOTION_META[e];
-            return (
-              <FilterChip
-                key={e}
-                active={filter === e}
-                onClick={() => setFilter((f) => (f === e ? "all" : e))}
-                label={m.label}
-                color={m.color}
-              />
-            );
-          })}
-          <div className="mx-1 h-5 w-px flex-shrink-0 bg-white/10" />
+        <div className="pointer-events-auto rounded-full border border-white/10 bg-night-900/70 px-2 py-1.5 backdrop-blur-md sm:px-3 sm:py-2">
           <button
             onClick={randomStar}
-            className="flex-shrink-0 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-ink-mist transition-colors hover:bg-white/5 hover:text-ink-gold active:scale-95 sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.2em]"
+            className="rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-ink-mist transition-colors hover:bg-white/5 hover:text-ink-gold active:scale-95 disabled:cursor-not-allowed disabled:opacity-35 sm:px-4 sm:text-xs sm:tracking-[0.22em]"
+            disabled={published.length === 0}
           >
             ✦ random
           </button>
@@ -230,35 +205,5 @@ export default function SpacePage() {
         />
       )}
     </main>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  label,
-  color,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  color: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex flex-shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] transition-all active:scale-95 sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs sm:tracking-[0.18em] ${
-        active
-          ? "bg-white/10 text-ink-silver"
-          : "text-ink-mist hover:bg-white/5 hover:text-ink-silver"
-      }`}
-    >
-      <span
-        className="h-1.5 w-1.5 rounded-full"
-        style={{ background: color, boxShadow: active ? `0 0 8px ${color}` : "none" }}
-      />
-      {label}
-    </button>
   );
 }

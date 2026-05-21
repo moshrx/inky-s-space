@@ -45,6 +45,13 @@ function InkyRoom() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+    };
+  }, []);
+
   const active: Poem | null = useMemo(() => {
     if (!activeId) return null;
     return (
@@ -88,6 +95,7 @@ function InkyRoom() {
     if (!active.body.trim()) return;
     publish(active.id);
     setShowPublishedList(true);
+    setShowSidebar(true);
   }
 
   const meta = active ? EMOTION_META[active.emotion] : EMOTION_META.quiet;
@@ -114,11 +122,14 @@ function InkyRoom() {
         <div className="flex items-center gap-1.5 sm:gap-3">
           <button
             type="button"
-            onClick={() => setShowSidebar((s) => !s)}
-            className="rounded-full border border-white/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-ink-mist active:scale-95 md:hidden"
-            aria-label="Toggle drafts"
+            onClick={() => {
+              setShowSidebar((s) => !s);
+              if (published.length > 0) setShowPublishedList(true);
+            }}
+            className="rounded-full border border-white/10 px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-ink-mist active:scale-95 md:hidden"
+            aria-label="Manage poems"
           >
-            {drafts.length}
+            poems {drafts.length + published.length}
           </button>
           <button
             type="button"
@@ -164,23 +175,50 @@ function InkyRoom() {
           )}
         </section>
 
-        {/* SIDEBAR — collapsed by default on mobile */}
+        {showSidebar && (
+          <button
+            type="button"
+            onClick={() => setShowSidebar(false)}
+            className="fixed inset-0 z-30 bg-night-950/70 backdrop-blur-sm md:hidden"
+            aria-label="Close poem manager"
+          />
+        )}
+
+        {/* SIDEBAR — drawer on mobile, side rail on desktop */}
         <aside
-          className={`order-2 rounded-2xl border border-white/[0.06] bg-night-900/50 p-4 backdrop-blur-md md:order-1 md:block ${
-            showSidebar ? "block" : "hidden"
+          className={`order-2 rounded-2xl border border-white/[0.06] bg-night-900/90 p-4 shadow-2xl backdrop-blur-md md:static md:order-1 md:block md:max-h-none md:overflow-visible md:bg-night-900/50 md:shadow-none ${
+            showSidebar
+              ? "fixed bottom-3 left-3 right-3 z-40 block max-h-[72svh] overflow-hidden"
+              : "hidden"
           }`}
         >
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-serif text-base italic text-ink-silver">unplaced stars</h2>
-            <button
-              onClick={handleNewDraft}
-              className="text-xs uppercase tracking-[0.2em] text-ink-mist transition-colors hover:text-ink-gold"
-            >
-              + new
-            </button>
+            <h2 className="font-serif text-base italic text-ink-silver">manage poems</h2>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleNewDraft}
+                className="text-xs uppercase tracking-[0.2em] text-ink-mist transition-colors hover:text-ink-gold"
+              >
+                + new
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSidebar(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-white/10 text-ink-faded md:hidden"
+                aria-label="Close poem manager"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M6 6l12 12M18 6l-12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <div className="thin-scroll max-h-[55svh] space-y-2 overflow-y-auto pr-1 md:max-h-[calc(100svh-260px)]">
+          <div className="mb-2 text-[10px] uppercase tracking-[0.25em] text-ink-faded">
+            drafts · {drafts.length}
+          </div>
+
+          <div className="thin-scroll max-h-[30svh] space-y-2 overflow-y-auto pr-1 md:max-h-[calc(100svh-260px)]">
             {drafts.length === 0 ? (
               <p className="font-serif text-sm italic text-ink-faded">no drifting stars yet.</p>
             ) : (
@@ -202,7 +240,7 @@ function InkyRoom() {
             )}
           </div>
 
-          <div className="mt-5 border-t border-white/5 pt-4">
+          <div className="mt-4 border-t border-white/5 pt-4 md:mt-5">
             <button
               onClick={() => setShowPublishedList((s) => !s)}
               className="flex w-full items-center justify-between text-xs uppercase tracking-[0.25em] text-ink-mist hover:text-ink-silver"
@@ -215,8 +253,10 @@ function InkyRoom() {
                 showPublishedList ? "mt-3 grid-rows-[1fr]" : "grid-rows-[0fr]"
               }`}
             >
-              <div className="min-h-0 space-y-2 overflow-y-auto" style={{ maxHeight: "28svh" }}>
-                {published.map((p) => {
+              <div className="min-h-0 space-y-2 overflow-y-auto" style={{ maxHeight: "24svh" }}>
+                {published.length === 0 ? (
+                  <p className="font-serif text-sm italic text-ink-faded">nothing placed yet.</p>
+                ) : published.map((p) => {
                   const m = EMOTION_META[p.emotion];
                   return (
                     <button

@@ -111,8 +111,16 @@ textarea, input { caret-color: #f4d58d; }
   letter-spacing: 0.005em;
   white-space: pre-wrap;
 }
+.poem-body-mobile {
+  font-size: 1rem;
+  line-height: 1.45;
+}
 @media (min-width: 640px) {
   .poem-body { font-size: 1.35rem; }
+  .poem-body-mobile {
+    font-size: 1.35rem;
+    line-height: 1.7;
+  }
 }
 
 /* ── Lightweight CSS animations (replace Framer on /, /inky) ───────────────── */
