@@ -1,8 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { STAR_COLOR, type Echo, type Poem } from "@/types/poem";
+import { STAR_COLOR, starWeight, type Echo, type Poem } from "@/types/poem";
 import { weekKey } from "@/lib/storage";
+import {
+  constellationSegments,
+  type Pt,
+  type Segment,
+} from "@/lib/constellation";
 
 interface Props {
   poems: Poem[];
@@ -124,25 +129,24 @@ export default function Starmap({
     return m;
   }, [echoes]);
 
-  // --- Constellations: poems in the same ISO week chained by published time ---
+  // --- Constellations: each ISO week becomes a closed figure ---
+  // Shape is derived from where the stars actually sit (convex hull), not from
+  // publish order — chaining by time crossed its own lines, because placeStar
+  // scatters positions independently of when a poem went up.
   const constellations = useMemo(() => {
-    const byWeek = new Map<string, Poem[]>();
+    const byWeek = new Map<string, Pt[]>();
     for (const p of poems) {
-      if (p.publishedAt === null) continue;
+      if (p.publishedAt === null || p.x == null || p.y == null) continue;
       const k = weekKey(p.publishedAt);
       const arr = byWeek.get(k) || [];
-      arr.push(p);
+      arr.push({ id: p.id, x: p.x, y: p.y });
       byWeek.set(k, arr);
     }
-    const lines: { from: Poem; to: Poem }[] = [];
+    const out: Segment[] = [];
     for (const arr of byWeek.values()) {
-      if (arr.length < 2) continue;
-      arr.sort((a, b) => (a.publishedAt || 0) - (b.publishedAt || 0));
-      for (let i = 0; i < arr.length - 1; i++) {
-        lines.push({ from: arr[i], to: arr[i + 1] });
-      }
+      out.push(...constellationSegments(arr));
     }
-    return lines;
+    return out;
   }, [poems]);
 
   // --- Newest poem / "tonight" check, once per render ---
@@ -272,22 +276,33 @@ export default function Starmap({
           </defs>
 
           <g transform={transform}>
-            <g opacity={0.35}>
-              {constellations.map((line, i) => {
-                const a = line.from;
-                const b = line.to;
-                if (a.x == null || b.x == null) return null;
-                if (!inViewport(a.x, a.y!) && !inViewport(b.x, b.y!)) return null;
+            {/* Week-clusters as closed figures. Hull edges carry the shape and
+                stay solid; interior spokes are thinner and dashed so they read
+                as ties into the figure rather than part of its outline.
+                Dashes on the hull vanish below ~1.2× — at overview zoom the
+                gaps eat more of the line than the line itself. */}
+            <g opacity={0.55}>
+              {constellations.map((s) => {
+                if (!inViewport(s.ax, s.ay) && !inViewport(s.bx, s.by)) return null;
+                const isSpoke = s.kind === "spoke";
+                const dashed = isSpoke || view.scale >= 1.2;
                 return (
                   <line
-                    key={i}
-                    x1={a.x}
-                    y1={a.y}
-                    x2={b.x}
-                    y2={b.y}
-                    stroke="rgba(232, 237, 247, 0.5)"
-                    strokeWidth={0.5 / view.scale}
-                    strokeDasharray={`${2 / view.scale} ${3 / view.scale}`}
+                    key={`${s.aId}-${s.bId}-${s.kind}`}
+                    x1={s.ax}
+                    y1={s.ay}
+                    x2={s.bx}
+                    y2={s.by}
+                    stroke={
+                      isSpoke
+                        ? "rgba(232, 237, 247, 0.7)"
+                        : "rgba(232, 237, 247, 0.9)"
+                    }
+                    strokeWidth={(isSpoke ? 0.7 : 0.95) / view.scale}
+                    strokeLinecap="round"
+                    strokeDasharray={
+                      dashed ? `${2 / view.scale} ${3 / view.scale}` : undefined
+                    }
                   />
                 );
               })}
@@ -298,10 +313,17 @@ export default function Starmap({
               if (!inViewport(p.x, p.y)) return null;
               const isHover = hoverId === p.id;
               const isTonight = isTonightActive && p.id === newestId;
-              const baseR = 3 + (p.depth || 0.6) * 2.2;
-              const r = baseR * (isHover ? 1.6 : 1) * (isTonight ? 1.25 : 1);
               const poemEchoes = echoIndex.get(p.id);
               const echoCount = poemEchoes ? poemEchoes.length : 0;
+
+              // Size = substance (words, plus a nudge for echoes). Depth now
+              // only tilts it slightly, so the map encodes something real
+              // instead of reshuffling randomly.
+              const weight = starWeight(p, echoCount);
+              // 2.6 floor keeps a one-line poem tappable; the 5.2 span is what
+              // makes the difference between a short and long poem legible.
+              const baseR = 2.6 + weight * 5.2 + (p.depth || 0.6) * 0.6;
+              const r = baseR * (isHover ? 1.6 : 1) * (isTonight ? 1.25 : 1);
 
               const seed = (parseInt(p.id.slice(-3), 36) || 0) % 100;
               const twinkleDur = `${3.2 + (seed % 20) * 0.12}s`;
@@ -312,7 +334,12 @@ export default function Starmap({
                 <g
                   key={p.id}
                   style={{ cursor: "pointer" }}
-                  onPointerEnter={() => setHoverId(p.id)}
+                  // Mouse only — a touch "enter" fires on the same tap that
+                  // opens the poem, which would strand the label on screen
+                  // behind the modal.
+                  onPointerEnter={(e) => {
+                    if (e.pointerType === "mouse") setHoverId(p.id);
+                  }}
                   onPointerLeave={() => setHoverId(null)}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -327,7 +354,10 @@ export default function Starmap({
                   <circle
                     cx={p.x}
                     cy={p.y}
-                    r={r * (isTonight ? 7 : isHover ? 5 : 3.5)}
+                    // Halo multipliers are lower than they once were: radius now
+                    // scales with poem length, so a long "tonight" poem at the
+                    // old ×7 swelled into a blob that swallowed its neighbours.
+                    r={r * (isTonight ? 5 : isHover ? 4.2 : 3.2)}
                     fill={STAR_COLOR}
                     opacity={isTonight ? 0.22 : 0.12}
                     filter="url(#soft-blur)"
@@ -393,7 +423,10 @@ export default function Starmap({
                   <circle cx={p.x} cy={p.y} r={r * 0.45} fill="white" opacity={0.85} />
 
                   {isHover && (
-                    <g pointerEvents="none">
+                    // paint-order:stroke draws a dark casing behind the glyphs
+                    // themselves, so titles stay readable over a dense cluster
+                    // without a plate that would need text measurement.
+                    <g pointerEvents="none" style={{ paintOrder: "stroke" }}>
                       <text
                         x={p.x + r * 2}
                         y={p.y - r * 2}
@@ -401,6 +434,10 @@ export default function Starmap({
                         fontStyle="italic"
                         fontSize={14 / view.scale}
                         fill="#e8edf7"
+                        stroke="#03050d"
+                        strokeWidth={3 / view.scale}
+                        strokeOpacity={0.85}
+                        strokeLinejoin="round"
                         opacity={0.92}
                       >
                         {p.title.trim() ||
@@ -413,6 +450,10 @@ export default function Starmap({
                           fontFamily="var(--font-sans), Inter, sans-serif"
                           fontSize={9 / view.scale}
                           fill={STAR_COLOR}
+                          stroke="#03050d"
+                          strokeWidth={2.5 / view.scale}
+                          strokeOpacity={0.85}
+                          strokeLinejoin="round"
                           letterSpacing={2 / view.scale}
                         >
                           TONIGHT
