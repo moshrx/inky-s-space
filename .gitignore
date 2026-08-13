@@ -5,3 +5,6 @@ out
 .env*.local
 *.tsbuildinfo
 next-env.d.ts
+
+# Supabase CLI local state — link info and a pooler connection string
+supabase/.temp/
