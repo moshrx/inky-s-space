@@ -20,7 +20,7 @@ const PoemModal = dynamic(() => import("@/components/PoemModal"), {
 const TONIGHT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 export default function SpacePage() {
-  const { ready, published, echoes, addEcho } = usePoems();
+  const { ready, error, published, echoes, addEcho } = usePoems();
   const [openPoem, setOpenPoem] = useState<Poem | null>(null);
   const [flyTo, setFlyTo] = useState<string | null>(null);
   const [showLegend, setShowLegend] = useState(false);
@@ -176,7 +176,26 @@ export default function SpacePage() {
         </div>
       )}
 
-      {ready && published.length === 0 && (
+      {ready && error && (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4">
+          <div className="pointer-events-auto max-w-md rounded-2xl border border-white/10 bg-night-900/70 p-6 text-center backdrop-blur-md sm:p-8">
+            <p className="mb-4 font-serif text-xl italic text-ink-silver sm:text-2xl">
+              the stars are behind cloud.
+            </p>
+            <p className="mb-6 font-serif text-sm italic text-ink-faded">
+              the poems are safe — we just can&apos;t reach them right now.
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-block rounded-full border border-white/15 px-5 py-2 text-xs uppercase tracking-[0.3em] text-ink-silver transition-all hover:border-ink-gold hover:text-ink-gold"
+            >
+              try again
+            </button>
+          </div>
+        </div>
+      )}
+
+      {ready && !error && published.length === 0 && (
         <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4">
           <div className="pointer-events-auto max-w-md rounded-2xl border border-white/10 bg-night-900/70 p-6 text-center backdrop-blur-md sm:p-8">
             <p className="mb-4 font-serif text-xl italic text-ink-silver sm:text-2xl">
