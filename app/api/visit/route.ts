@@ -27,6 +27,10 @@ function deviceClass(ua: string): string {
   return "desktop";
 }
 
+// Days are reckoned in the site owner's timezone so that "a day" in the
+// dashboard means a day as they actually lived it.
+const SITE_TZ = "America/Halifax";
+
 // The daily salt. Held in memory only, regenerated when the UTC day rolls
 // over, and never written to the database. A serverless cold start makes a
 // fresh salt, which splits one visitor into two ids for that day — an
@@ -36,7 +40,10 @@ let saltDay = "";
 let saltValue = "";
 
 function dailySalt(): string {
-  const today = new Date().toISOString().slice(0, 10);
+  // Halifax, not UTC: the salt boundary is also the boundary at which a
+  // visitor gets a new id, so rolling it at 21:00 local would split an
+  // ordinary evening reader into two "people". en-CA gives YYYY-MM-DD.
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: SITE_TZ });
   if (today !== saltDay) {
     saltDay = today;
     saltValue =

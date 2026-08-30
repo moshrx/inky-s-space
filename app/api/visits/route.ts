@@ -4,6 +4,12 @@ import { query } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+// All dates shown to the reader are in this zone, matching the day boundary
+// the visitor ids rotate on (see app/api/visit/route.ts). The database stores
+// timestamptz in UTC; only presentation is converted. Constant, never user
+// input, so interpolating it into SQL is safe.
+const SITE_TZ = "America/Halifax";
+
 // Read side of the visit log. Gated by STATS_PASSWORD, which is checked here
 // on the server — unlike the /inky lock, whose password is compiled into the
 // client bundle and is therefore readable by anyone who opens devtools. That
@@ -42,7 +48,7 @@ export async function GET(request: Request) {
                  count(distinct visitor_hash) filter (where created_at > now() - interval '24 hours')::int as visitors_24h
                from visits where device <> 'bot'`),
 
-        query(`select to_char(created_at, 'YYYY-MM-DD') as day,
+        query(`select to_char(created_at at time zone '${SITE_TZ}', 'YYYY-MM-DD') as day,
                  count(*)::int as views,
                  count(distinct visitor_hash)::int as visitors
                from visits
@@ -73,7 +79,7 @@ export async function GET(request: Request) {
         // recently seen, since that is what you actually scan for.
         query(`select
                  left(visitor_hash, 8) as id,
-                 to_char(max(created_at), 'YYYY-MM-DD HH24:MI') as last_seen,
+                 to_char(max(created_at) at time zone '${SITE_TZ}', 'YYYY-MM-DD HH24:MI') as last_seen,
                  count(*)::int as views,
                  count(distinct path)::int as pages,
                  max(device) as device,
@@ -81,7 +87,7 @@ export async function GET(request: Request) {
                  string_agg(distinct path, ', ' order by path) as paths
                from visits
                where visitor_hash is not null and device <> 'bot'
-               group by visitor_hash, date_trunc('day', created_at)
+               group by visitor_hash, date_trunc('day', created_at at time zone '${SITE_TZ}')
                order by max(created_at) desc
                limit 100`),
       ]);
