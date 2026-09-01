@@ -36,8 +36,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Bots are excluded everywhere below: they are traffic, not readers, and
-    // leaving them in makes every number look better than it is.
+    // Bots and non-AE traffic are excluded everywhere below: this admin view is
+    // scoped to UAE visits only.
+    const visitFilter = "device <> 'bot' and country = 'AE'";
     const [totals, daily, paths, referrers, devices, countries, visitors] =
       await Promise.all([
         query(`select
@@ -46,50 +47,48 @@ export async function GET(request: Request) {
                  count(*) filter (where kind = 'reload')::int as reloads,
                  count(*) filter (where created_at > now() - interval '24 hours')::int as views_24h,
                  count(distinct visitor_hash) filter (where created_at > now() - interval '24 hours')::int as visitors_24h
-               from visits where device <> 'bot'`),
+               from visits where ${visitFilter}`),
 
         query(`select to_char(created_at at time zone '${SITE_TZ}', 'YYYY-MM-DD') as day,
                  count(*)::int as views,
                  count(distinct visitor_hash)::int as visitors
                from visits
-               where device <> 'bot' and created_at > now() - interval '30 days'
+               where ${visitFilter} and created_at > now() - interval '30 days'
                group by day order by day desc`),
 
         query(`select path,
                  count(*)::int as views,
                  count(distinct visitor_hash)::int as visitors
-               from visits where device <> 'bot'
+               from visits where ${visitFilter}
                group by path order by views desc limit 20`),
 
         query(`select coalesce(referrer_host, 'direct') as source,
                  count(*)::int as views
-               from visits where device <> 'bot'
+               from visits where ${visitFilter}
                group by source order by views desc limit 20`),
 
         query(`select device, count(*)::int as views
-               from visits where device <> 'bot'
+               from visits where ${visitFilter}
                group by device order by views desc`),
 
         query(`select coalesce(country, 'unknown') as country,
                  count(*)::int as views
-               from visits where device <> 'bot'
+               from visits where ${visitFilter}
                group by country order by views desc limit 20`),
 
-        // The per-visitor view: one row per person per day. Ordered by most
-        // recently seen, since that is what you actually scan for.
+        // Raw visit log: keep repeated visits from the same device visible.
         query(`select
-                 left(visitor_hash, 8) as id,
-                 to_char(max(created_at) at time zone '${SITE_TZ}', 'YYYY-MM-DD HH24:MI') as last_seen,
-                 count(*)::int as views,
-                 count(distinct path)::int as pages,
-                 max(device) as device,
-                 max(coalesce(country, '')) as country,
-                 string_agg(distinct path, ', ' order by path) as paths
+                 to_char(created_at at time zone '${SITE_TZ}', 'YYYY-MM-DD HH24:MI:SS') as seen_at,
+                 left(coalesce(visitor_hash, ''), 8) as id,
+                 path,
+                 kind,
+                 coalesce(referrer_host, 'direct') as source,
+                 device,
+                 coalesce(country, '') as country
                from visits
-               where visitor_hash is not null and device <> 'bot'
-               group by visitor_hash, date_trunc('day', created_at at time zone '${SITE_TZ}')
-               order by max(created_at) desc
-               limit 100`),
+               where ${visitFilter}
+               order by created_at desc
+               limit 500`),
       ]);
 
     return NextResponse.json({

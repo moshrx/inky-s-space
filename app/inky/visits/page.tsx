@@ -127,17 +127,17 @@ export default function VisitsPage() {
       </section>
 
       <Table
-        title="each visitor"
-        note="one row per person per day. ids are pseudonymous and change daily."
-        head={["id", "last seen", "views", "pages", "device", "country", "read"]}
+        title="visit log"
+        note="AE visits only. repeated visits from the same device stay visible."
+        head={["time", "id", "path", "kind", "source", "device", "country"]}
         rows={stats.visitors.map((v) => [
+          v.seen_at,
           v.id,
-          v.last_seen,
-          v.views,
-          v.pages,
+          v.path,
+          v.kind,
+          v.source,
           v.device,
           v.country || "—",
-          v.paths,
         ])}
       />
 
