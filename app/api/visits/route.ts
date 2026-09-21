@@ -36,9 +36,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Bots and non-AE traffic are excluded everywhere below: this admin view is
-    // scoped to UAE visits only.
-    const visitFilter = "device <> 'bot' and country = 'AE'";
+    // Bots and non-Malaysian traffic are excluded everywhere below: this admin
+    // view is scoped to Malaysian visits only.
+    const visitFilter = "device <> 'bot' and country = 'MY'";
     const [totals, daily, paths, referrers, devices, countries, visitors] =
       await Promise.all([
         query(`select

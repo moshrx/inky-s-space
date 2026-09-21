@@ -128,7 +128,7 @@ export default function VisitsPage() {
 
       <Table
         title="visit log"
-        note="AE visits only. repeated visits from the same device stay visible."
+        note="Malaysia visits only. repeated visits from the same device stay visible."
         head={["time", "id", "path", "kind", "source", "device", "country"]}
         rows={stats.visitors.map((v) => [
           v.seen_at,
