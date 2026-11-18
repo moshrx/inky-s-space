@@ -36,9 +36,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Include India, Malaysia, and unknown locations.
-    // Exclude Canada and bots from every dashboard query.
-    const visitFilter = "device <> 'bot' and country is distinct from 'CA'";
+    // Show only Malaysian visits and exclude bots from every dashboard query.
+    const visitFilter = "device <> 'bot' and country = 'MY'";
     const [totals, daily, paths, referrers, devices, countries, visitors] =
       await Promise.all([
         query(`select
