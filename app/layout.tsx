@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Cormorant_Garamond } from "next/font/google";
 import ChunkErrorRecovery from "@/components/ChunkErrorRecovery";
-import VisitLogger from "@/components/VisitLogger";
 import "./globals.css";
 
 const inter = Inter({
@@ -21,7 +20,7 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: "Inky's Space",
-  description: "A small space for poems. Quiet, private, alive.",
+  description: "this app meant a lot to me. take care and stay happy..",
   manifest: "/site.webmanifest",
   appleWebApp: {
     capable: true,
@@ -55,7 +54,6 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${cormorant.variable}`}>
       <body className="bg-night-950 text-ink-silver antialiased">
         <ChunkErrorRecovery />
-        <VisitLogger />
         <div className="aurora" aria-hidden />
         <div className="relative z-10 min-h-svh">{children}</div>
       </body>
