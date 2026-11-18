@@ -103,10 +103,10 @@ export default function VisitsPage() {
           who has been here
         </h1>
         <a
-          href="/inky"
+          href="/"
           className="text-[10px] uppercase tracking-[0.3em] text-ink-faded transition-colors hover:text-ink-mist"
         >
-          ← the writing room
+          ← home
         </a>
       </header>
 
@@ -128,7 +128,7 @@ export default function VisitsPage() {
 
       <Table
         title="visit log"
-        note="Malaysia visits only. repeated visits from the same device stay visible."
+        note="Visits from outside Canada, including India and Malaysia. Bots are excluded; repeated visits from the same device stay visible."
         head={["time", "id", "path", "kind", "source", "device", "country"]}
         rows={stats.visitors.map((v) => [
           v.seen_at,
